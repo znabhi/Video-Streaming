@@ -8,3 +8,5 @@ Starting This project from scratch Video streaming platform
 -npm i mongoose express dotenv
 -npm i cookie-parser
 -npm i cors
+-npm i mongoose-aggregate-paginate-v2
+-npm i bcrypt jsonwebtoken
