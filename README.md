@@ -6,3 +6,5 @@ Starting This project from scratch Video streaming platform
 -npm i -D nodemon
 -npm i -D prettier
 -npm i mongoose express dotenv
+-npm i cookie-parser
+-npm i cors
