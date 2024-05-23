@@ -10,5 +10,5 @@ Starting This project from scratch Video streaming platform
 -npm i cors
 -npm i mongoose-aggregate-paginate-v2
 -npm i bcrypt jsonwebtoken
-
-changed
+-npm i cloudinary
+-npm i multer
