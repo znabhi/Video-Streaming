@@ -25,10 +25,12 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
-    watchHistory: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Video",
-    },
+    watchHistory: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Video",
+      },
+    ],
     avatar: {
       type: String, // cloudnary
       required: true,
