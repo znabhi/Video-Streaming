@@ -10,6 +10,17 @@ const options = {
   httpOnly: true,
   secure: true,
 };
+const imgSize = 150 * 1024;
+
+function isValidName(name) {
+  const regex = /^[a-zA-Z\s'-]+$/;
+  return regex.test(name);
+}
+function isValidEmail(email) {
+  const regex =
+    /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
+  return regex.test(email);
+}
 
 const registerUser = asyncHandler(async (req, res) => {
   /* for test use only
@@ -221,4 +232,138 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
-export { registerUser, loggedInUser, logOutUser, refreshAccessToken };
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const { password, newpassword } = req.body;
+  const user = await User.findById(req.user?._id);
+
+  console.log(user);
+
+  const isPasswordCorrect = await user.isPasswordCorrect(password);
+
+  if (!isPasswordCorrect) {
+    throw new ApiError(400, "Invalid old password");
+  }
+
+  user.password = newpassword;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password Changed SuccessFully"));
+});
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, { user: req.user }, "user fatched Successfully")
+    );
+});
+
+const updateUserDetails = asyncHandler(async (req, res) => {
+  const { name, email } = req.body;
+
+  if (!name && !email) {
+    throw new ApiError(
+      400,
+      "Please provide either a name or an email to update"
+    );
+  } else if (name && !isValidName(name)) {
+    throw new ApiError(400, "Invalid name format");
+  } else if (email && !isValidEmail(email)) {
+    throw new ApiError(400, "Invalid email format");
+  }
+
+  const user = await User.findById(req.user?._id).select("-password -username");
+  if (!user) {
+    throw new ApiError(400, "User Details not Fatched yet");
+  } else if (name === user.name && email === user.email) {
+    throw new ApiError(
+      400,
+      "The provided name and email are the same as the current ones"
+    );
+  }
+
+  user.name = name;
+  user.email = email;
+
+  await user.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { user: user }, "Successfully Changed"));
+});
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  const avatarLocalPath = req.file?.path;
+  // console.log(req.file);
+
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Please Select the Img File");
+  }
+
+  if (imgSize <= req.file.size) {
+    throw new ApiError(400, "Image size exceeds the limit of 150KB");
+  }
+
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  if (!avatar?.url) {
+    throw new ApiError(400, "Error while uploading on avatar");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: avatar.url,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Avatar image updated successfully"));
+});
+
+const coverUserImage = asyncHandler(async (req, res) => {
+  const coverImgLocalPath = req.file?.path;
+  // console.log(coverImgLocalPath);
+  if (!coverImgLocalPath) {
+    new ApiError(400, "Please Select the Img File");
+  }
+
+  if (imgSize <= req.file.size) {
+    throw new ApiError(400, "Image size exceeds the limit of 150KB");
+  }
+  const cover = await uploadOnCloudinary(coverImgLocalPath);
+  if (!cover.url) {
+    throw new ApiError(400, "Error while uploading on avatar");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        cover: cover.url,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Cover image updated successfully"));
+});
+
+export {
+  registerUser,
+  loggedInUser,
+  logOutUser,
+  refreshAccessToken,
+  changeCurrentPassword,
+  getCurrentUser,
+  updateUserDetails,
+  updateUserAvatar,
+  coverUserImage,
+};
