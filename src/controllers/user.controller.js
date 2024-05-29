@@ -175,11 +175,17 @@ const loggedInUser = asyncHandler(async (req, res) => {
 });
 
 const logOutUser = asyncHandler(async (req, res) => {
-  await User.findByIdAndUpdate(req.user._id, {
-    $set: {
-      refreshToken: undefined,
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $unset: {
+        refreshToken: 1,
+      },
     },
-  });
+    {
+      new: true,
+    }
+  );
 
   return res
     .status(200)
@@ -367,12 +373,12 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
   const channel = await User.aggregate([
     {
       $match: {
-        username: username?.tolowerCase(),
+        username: username?.toLowerCase(),
       },
     },
     {
       $lookup: {
-        from: "subscribers",
+        from: "subscriptions",
         localField: "_id",
         foreignField: "channel",
         as: "subscribers",
@@ -380,10 +386,10 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     },
     {
       $lookup: {
-        from: "subscribers",
+        from: "subscriptions",
         localField: "_id",
         foreignField: "subscriber",
-        as: "subscriberTo",
+        as: "subscribedTo",
       },
     },
     {
@@ -392,11 +398,11 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
           $size: "$subscribers",
         },
         channelsSubscribedToCount: {
-          $size: "$subscriberTo",
+          $size: "$subscribedTo",
         },
         isSubscribed: {
           $cond: {
-            if: { $in: [req.user._id, $subscribers.subscriber] },
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
             then: true,
             else: false,
           },
