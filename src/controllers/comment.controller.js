@@ -1,25 +1,29 @@
-import mongoose, { mongo } from "mongoose";
+import mongoose from "mongoose";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { User } from "../models/user.model.js";
-import { Video } from "../models/vidoe.model.js";
 import { Comment } from "../models/comment.model.js";
 import { ApiError } from "../utils/ApiErrors.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+
 const getVideoComment = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
+
   if (!videoId) {
-    throw new ApiError(400, "Not Get video id");
+    throw new ApiError(400, "Video ID not provided");
   }
-  const allComment = await Comment.aggregate([
+
+  const allComments = await Comment.aggregate([
     {
       $match: {
         video: new mongoose.Types.ObjectId(videoId),
       },
     },
   ]);
+
   return res
     .status(200)
-    .json(new ApiResponse(200, allComment, "Successfully Get All Comments"));
+    .json(
+      new ApiResponse(200, allComments, "Successfully retrieved all comments")
+    );
 });
 
 const addComment = asyncHandler(async (req, res) => {
@@ -27,16 +31,8 @@ const addComment = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
   const { content } = req.body;
 
-  //   console.log(content);
-
-  if (!videoId) {
-    throw new ApiError(400, "Video not Found");
-  }
-  if (!userId) {
-    throw new ApiError(400, "Authentication is Required");
-  }
-  if (!content) {
-    throw new ApiError(400, "Please Enter Some Content");
+  if (!videoId || !userId || !content) {
+    throw new ApiError(400, "Invalid data provided");
   }
 
   const comment = await Comment.create({
@@ -45,13 +41,9 @@ const addComment = asyncHandler(async (req, res) => {
     owner: new mongoose.Types.ObjectId(userId),
   });
 
-  if (!comment) {
-    throw new ApiError(400, "Comment Not Save");
-  }
-
   return res
-    .status(200)
-    .json(new ApiResponse(200, comment, "Successfully Commited!"));
+    .status(201)
+    .json(new ApiResponse(201, comment, "Comment created successfully"));
 });
 
 const editComment = asyncHandler(async (req, res) => {
@@ -59,57 +51,51 @@ const editComment = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
   const { content } = req.body;
 
-  if (!commentId || !userId) {
-    throw new ApiError(400, "Comment ID or user ID not provided");
-  }
-
-  if (!content) {
-    throw new ApiError(400, "Please provide comment content");
+  if (!commentId || !userId || !content) {
+    throw new ApiError(400, "Invalid data provided");
   }
 
   const updatedComment = await Comment.findOneAndUpdate(
     {
       _id: commentId,
-      owner: userId, // Simplify by using userId directly
+      owner: userId,
     },
     {
-      content: content,
-    }
+      content,
+    },
+    { new: true }
   );
 
   if (!updatedComment) {
     throw new ApiError(404, "Comment not found");
   }
 
-  // Respond with success
-  res.status(200).json({
-    status: 200,
-    data: updatedComment,
-    message: "Comment updated successfully",
-  });
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedComment, "Comment updated successfully"));
 });
 
 const deleteComment = asyncHandler(async (req, res) => {
   const { commentId } = req.params;
   const userId = req.user?._id;
+
   if (!commentId || !userId) {
-    throw new ApiError(
-      400,
-      !commentId ? "Comment ID is required" : "User ID not found"
-    );
+    throw new ApiError(400, "Invalid data provided");
   }
 
   const comment = await Comment.findOneAndDelete({
     _id: commentId,
-    owner: new mongoose.Types.ObjectId(req.user._id),
+    owner: new mongoose.Types.ObjectId(userId),
   });
+
   if (!comment) {
     throw new ApiError(
       404,
       "Comment not found or you don't have permission to delete it"
     );
   }
-  res
+
+  return res
     .status(200)
     .json(new ApiResponse(200, comment, "Comment deleted successfully"));
 });
