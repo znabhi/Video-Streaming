@@ -1,20 +1,26 @@
 import { Router } from "express";
 import {
-  getAllVideos,
+  uploadVideo,
   updateVideoDetails,
   getVideoById,
   deleteVideo,
   togglePublishStatus,
+  getAllVideos,
 } from "../controllers/video.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
+import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-router.route("/video-file").get(upload.single("videoFile"), getAllVideos);
+router.route("/").get(getAllVideos);
+router.route("/:videoId").get(getVideoById);
+
+router.use(verifyJWT);
+
+router.route("/upload").post(upload.single("videoFile"), uploadVideo);
 
 router
   .route("/:videoId")
-  .get(getVideoById)
   .patch(upload.single("vidoeThumnail"), updateVideoDetails)
   .post(deleteVideo);
 
