@@ -28,6 +28,7 @@ import userRouter from "./routes/users.route.js";
 import videoRouter from "./routes/video.route.js";
 import commentRouter from "./routes/comment.route.js";
 import tweetRouter from "./routes/tweet.route.js";
+import playlistRouter from "./routes/playlist.route.js";
 import { toggleLike, toggleDislike } from "./controllers/like.controller.js";
 import { verifyJWT } from "./middlewares/auth.middleware.js";
 
@@ -36,6 +37,7 @@ app.use("/api/v1/user", userRouter);
 app.use("/api/v1/video", videoRouter);
 app.use("/api/v1/comment", commentRouter);
 app.use("/api/v1/tweet", tweetRouter);
+app.use("/api/v1/playlist", playlistRouter);
 
 // Routes for liking and disliking
 

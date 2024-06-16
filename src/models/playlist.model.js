@@ -2,14 +2,14 @@ import mongoose, { Schema } from "mongoose";
 
 const playlistSchema = new Schema(
   {
-    playlistName: {
+    title: {
       type: String,
       required: true,
     },
-    playlistDiscription: {
+    discription: {
       type: String,
     },
-    playlistCreatedBy: {
+    createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
     },
